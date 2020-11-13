@@ -21,31 +21,43 @@ class Slideshow {
     constructor(el){
         this.DOM = {el};
         this.DOM.cards = [];
-        [...this.DOM.el.querySelectorAll('.slideshow__card')].forEach(card => this.DOM.cards.push(card));
+        [...this.DOM.el.querySelectorAll('.slideshow__card')].forEach((card, index) => this.DOM.cards.push(card));
+        this.cardsTotal = this.DOM.cards.length;
+
+        this.leftCard = {};
+        this.rightCard = {};
 
         this.DOM.interactions = {
             left: document.querySelector('.slideshow-frame__button--prev'),
             right: document.querySelector('.slideshow-frame__button--next')
         }
 
-        this.intersectingCards = [];
-
         this.observeCards(this.DOM.cards);
         this.calculateGap();
         this.initEvents();
-
-        console.log('this.DOM.cards: ', this.DOM.cards);
+        
         console.log('this: ', this);
+        
+    }
+
+    navigate(direction){
+        console.log(this.cardsTotal-this.leftCard.index-1)
+        this.upcomingCards = [];
+        for(let i=1; i<this.visibleCardsTotal+1; i++){
+            this.upcomingCards.push(this.DOM.cards[this.cardsTotal-this.leftCard.index-i]);
+        }
+        console.log('this.upcomingCards: ', this.upcomingCards);
     }
 
     observeCards(items){ 
         const observer = new IntersectionObserver(entries => {
-            console.log('Observed: ', entries)
+            // console.log('Observed: ', entries)
             new Promise((resolve, reject) => {
-                this.intersectingCards.splice();
-                const temp = entries.filter(entry => entry.isIntersecting);
-                temp.filter((intersecting, i, array) => intersecting === array[0] ||intersecting === array[array.length-1]).forEach(_ => this.intersectingCards.push(_));    
-                resolve()
+                [this.leftCard.entry, this.rightCard.entry] = entries.filter((entry, i) => entry.isIntersecting).filter((intersecting, i, array) => intersecting === array[0] || intersecting === array[array.length-1]);
+                this.leftCard.index = [...this.leftCard.entry.target.parentElement.children].indexOf(this.leftCard.entry.target);
+                this.rightCard.index = [...this.rightCard.entry.target.parentElement.children].indexOf(this.rightCard.entry.target);
+                this.visibleCardsTotal = this.rightCard.index+1 - this.leftCard.index;
+                resolve();
             }).then(_ => observer.disconnect())
         }, options);
         
@@ -55,19 +67,13 @@ class Slideshow {
     calculateGap() {
         const s1 = this.DOM.cards[0].getBoundingClientRect();
         const s2 = this.DOM.cards[1].getBoundingClientRect();
+        // const s1 = this.DOM.cards[0].card.getBoundingClientRect();
+        // const s2 = this.DOM.cards[1].card.getBoundingClientRect();
         this.gap = MathUtils.distance(s1.left, s2.left, s1.top, s2.top);
         // this.DOM.el.style.transform = `translateX(-${this.gap}px)`;
 
     }
 
-    // navigate(direction){
-    //     if (this.isAnimating) {
-    //         return false;
-    //     }
-    //     this.isAnimating = true;
-    //     const upcomingPos = direction === 'right' ?
-    //     this.
-    // }
 
     initEvents(){
         this.clickLeftFn = () => this.navigate('left');
@@ -76,6 +82,8 @@ class Slideshow {
         this.clickRightFn = () => this.navigate('right');
         this.DOM.interactions.right.addEventListener('click', this.clickRightFn);
     }
+
+  
 
 
     // move(direction, val){
